@@ -1,0 +1,35 @@
+# CÓRTEX BI - Dependências Básicas (sem versões específicas)
+# Use este arquivo se o requirements.txt original der erro
+
+# Servidor Web
+fastapi
+uvicorn
+
+# Manipulação de Dados
+pandas
+numpy
+openpyxl
+
+# Geração de PPTX
+python-pptx
+
+# Logs
+loguru
+
+# Upload de arquivos
+python-multipart
+
+# Utilitários
+python-dotenv
+requests
+
+# IA e ML (opcionais - podem ser instalados separadamente)
+# scikit-learn
+# nltk
+# textblob
+# openai
+
+# Banco de dados (opcionais)
+# sqlalchemy
+# pyodbc
+
