@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurar Métrica - CÓRTEX BI</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            background: #f8f9fa;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .config-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        
+        .config-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .config-header {
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .config-header h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0;
+        }
+        
+        .form-section {
+            margin-bottom: 30px;
+        }
+        
+        .form-section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-section-title i {
+            color: #1e40af;
+        }
+        
+        .code-editor {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            background: #1f2937;
+            color: #10b981;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 150px;
+        }
+        
+        .btn-test {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        
+        .btn-test:hover {
+            background: #059669;
+        }
+        
+        .alert-preview {
+            background: #f3f4f6;
+            border-left: 4px solid #1e40af;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="config-container">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 style="font-size: 32px; font-weight: 700; color: #1f2937; margin: 0;">
+                    <i class="fas fa-cog"></i> Configurar Métrica de Anomalia
+                </h1>
+                <p class="text-muted">Configure visualmente uma métrica para detecção proativa de anomalias</p>
+            </div>
+            <a href="/admin/dashboard" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar ao Dashboard
+            </a>
+        </div>
+        
+        <form id="metric-config-form">
+            <!-- Informações Básicas -->
+            <div class="config-card">
+                <div class="config-header">
+                    <h2><i class="fas fa-info-circle"></i> Informações Básicas</h2>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">ID da Métrica *</label>
+                            <input type="text" class="form-control" id="metric-id" required 
+                                   placeholder="Ex: vendas_totais_diarias">
+                            <small class="text-muted">Use apenas letras minúsculas, números e underscores</small>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Nome da Métrica *</label>
+                            <input type="text" class="form-control" id="metric-name" required 
+                                   placeholder="Ex: Vendas Totais Diárias">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Descrição</label>
+                    <textarea class="form-control" id="metric-description" rows="2" 
+                              placeholder="Descreva o que esta métrica monitora"></textarea>
+                </div>
+                
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="metric-enabled" checked>
+                    <label class="form-check-label" for="metric-enabled">
+                        Métrica habilitada (começar a monitorar imediatamente)
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Fonte de Dados -->
+            <div class="config-card">
+                <div class="config-header">
+                    <h2><i class="fas fa-database"></i> Fonte de Dados</h2>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Tipo de Fonte *</label>
+                    <select class="form-select" id="data-source-type" onchange="updateDataSourceFields()">
+                        <option value="">Selecione...</option>
+                        <option value="sql_server">SQL Server</option>
+                        <option value="csv">Arquivo CSV</option>
+                        <option value="excel">Arquivo Excel</option>
+                        <option value="api">API REST</option>
+                        <option value="power_bi">Power BI</option>
+                        <option value="internal">Métrica Interna do Sistema</option>
+                    </select>
+                </div>
+                
+                <!-- SQL Server Fields -->
+                <div id="sql-fields" style="display: none;">
+                    <div class="mb-3">
+                        <label class="form-label">Conexão SQL</label>
+                        <select class="form-select" id="sql-connection">
+                            <option value="sql_principal">SQL Principal</option>
+                            <option value="sql_secundario">SQL Secundário</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Query SQL *</label>
+                        <textarea class="form-control code-editor" id="sql-query" rows="4" 
+                                  placeholder="SELECT SUM(valor) as total FROM vendas WHERE data = CAST(GETDATE() AS DATE)"></textarea>
+                        <button type="button" class="btn btn-test btn-sm mt-2" onclick="testSQLQuery()">
+                            <i class="fas fa-play"></i> Testar Query
+                        </button>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Coluna de Valor *</label>
+                        <input type="text" class="form-control" id="sql-value-column" placeholder="Ex: total">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Query para Dados Históricos *</label>
+                        <textarea class="form-control code-editor" id="sql-historical-query" rows="4" 
+                                  placeholder="SELECT CAST(data AS DATE) as data, SUM(valor) as total FROM vendas WHERE data >= DATEADD(day, -30, GETDATE()) GROUP BY CAST(data AS DATE)"></textarea>
+                    </div>
+                </div>
+                
+                <!-- CSV Fields -->
+                <div id="csv-fields" style="display: none;">
+                    <div class="mb-3">
+                        <label class="form-label">Caminho do Arquivo CSV *</label>
+                        <input type="text" class="form-control" id="csv-file-path" 
+                               placeholder="data/raw/vendas_diarias.csv">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Coluna de Valor *</label>
+                                <input type="text" class="form-control" id="csv-value-column" 
+                                       placeholder="Ex: valor_total">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Coluna de Data</label>
+                                <input type="text" class="form-control" id="csv-timestamp-column" 
+                                       placeholder="Ex: data">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Delimitador</label>
+                                <select class="form-select" id="csv-delimiter">
+                                    <option value=",">, (vírgula)</option>
+                                    <option value=";">; (ponto e vírgula)</option>
+                                    <option value="\t">Tab</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Encoding</label>
+                                <select class="form-select" id="csv-encoding">
+                                    <option value="utf-8">UTF-8</option>
+                                    <option value="latin1">Latin-1</option>
+                                    <option value="cp1252">Windows-1252</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- API Fields -->
+                <div id="api-fields" style="display: none;">
+                    <div class="mb-3">
+                        <label class="form-label">URL da API *</label>
+                        <input type="text" class="form-control" id="api-url" 
+                               placeholder="https://api.empresa.com/metrics/vendas">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Método HTTP</label>
+                                <select class="form-select" id="api-method">
+                                    <option value="GET">GET</option>
+                                    <option value="POST">POST</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Timeout (segundos)</label>
+                                <input type="number" class="form-control" id="api-timeout" value="30">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Headers (JSON)</label>
+                        <textarea class="form-control code-editor" id="api-headers" rows="3">
+{
+  "Authorization": "Bearer ${API_TOKEN}",
+  "Content-Type": "application/json"
+}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Caminho da Resposta *</label>
+                        <input type="text" class="form-control" id="api-response-path" 
+                               placeholder="data.vendas.total">
+                        <small class="text-muted">Caminho JSON para extrair o valor (ex: data.vendas.total)</small>
+                    </div>
+                    
+                    <button type="button" class="btn btn-test btn-sm" onclick="testAPI()">
+                        <i class="fas fa-play"></i> Testar API
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Configuração de Detecção -->
+            <div class="config-card">
+                <div class="config-header">
+                    <h2><i class="fas fa-brain"></i> Configuração de Detecção</h2>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">Algoritmo</label>
+                            <select class="form-select" id="detection-method">
+                                <option value="isolation_forest">Isolation Forest</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">Contaminação</label>
+                            <input type="number" class="form-control" id="detection-contamination" 
+                                   value="0.1" step="0.01" min="0.01" max="0.5">
+                            <small class="text-muted">% de dados considerados anômalos (0.01-0.5)</small>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">Threshold</label>
+                            <input type="number" class="form-control" id="detection-threshold" 
+                                   value="-0.5" step="0.1">
+                            <small class="text-muted">Score mínimo para alertar (-1 a 0)</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Amostras Mínimas para Treinar</label>
+                    <input type="number" class="form-control" id="min-samples" value="30">
+                    <small class="text-muted">Número mínimo de dados históricos necessários</small>
+                </div>
+            </div>
+            
+            <!-- Configuração de Alertas -->
+            <div class="config-card">
+                <div class="config-header">
+                    <h2><i class="fas fa-bell"></i> Configuração de Alertas</h2>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Severidade *</label>
+                            <select class="form-select" id="alert-severity">
+                                <option value="low">Baixa</option>
+                                <option value="medium">Média</option>
+                                <option value="high">Alta</option>
+                                <option value="critical">Crítica</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de Threshold</label>
+                            <select class="form-select" id="alert-threshold-type">
+                                <option value="percentage">Percentual (%)</option>
+                                <option value="absolute">Absoluto</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Valor do Threshold</label>
+                    <input type="number" class="form-control" id="alert-threshold-value" value="15">
+                    <small class="text-muted">Desvio necessário para disparar alerta</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Canais de Alerta</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="alert-email" checked>
+                        <label class="form-check-label" for="alert-email">Email</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="alert-teams">
+                        <label class="form-check-label" for="alert-teams">Microsoft Teams</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="alert-webhook">
+                        <label class="form-check-label" for="alert-webhook">Webhook Customizado</label>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Destinatários (emails separados por vírgula)</label>
+                    <input type="text" class="form-control" id="alert-recipients" 
+                           placeholder="gerente@empresa.com, diretor@empresa.com">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Cooldown (minutos)</label>
+                    <input type="number" class="form-control" id="alert-cooldown" value="60">
+                    <small class="text-muted">Tempo mínimo entre alertas da mesma métrica</small>
+                </div>
+            </div>
+            
+            <!-- Configuração de Monitoramento -->
+            <div class="config-card">
+                <div class="config-header">
+                    <h2><i class="fas fa-clock"></i> Configuração de Monitoramento</h2>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Intervalo de Verificação</label>
+                            <select class="form-select" id="monitoring-interval">
+                                <option value="60">1 minuto</option>
+                                <option value="300">5 minutos</option>
+                                <option value="600">10 minutos</option>
+                                <option value="1800">30 minutos</option>
+                                <option value="3600" selected>1 hora</option>
+                                <option value="7200">2 horas</option>
+                                <option value="14400">4 horas</option>
+                                <option value="86400">24 horas</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Horário Ativo</label>
+                            <select class="form-select" id="monitoring-hours">
+                                <option value="00:00-23:59">24 horas</option>
+                                <option value="08:00-18:00">Horário comercial (8h-18h)</option>
+                                <option value="09:00-17:00">Horário comercial (9h-17h)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Dias Ativos</label>
+                    <div class="btn-group" role="group">
+                        <input type="checkbox" class="btn-check" id="day-1" checked>
+                        <label class="btn btn-outline-primary" for="day-1">Seg</label>
+                        
+                        <input type="checkbox" class="btn-check" id="day-2" checked>
+                        <label class="btn btn-outline-primary" for="day-2">Ter</label>
+                        
+                        <input type="checkbox" class="btn-check" id="day-3" checked>
+                        <label class="btn btn-outline-primary" for="day-3">Qua</label>
+                        
+                        <input type="checkbox" class="btn-check" id="day-4" checked>
+                        <label class="btn btn-outline-primary" for="day-4">Qui</label>
+                        
+                        <input type="checkbox" class="btn-check" id="day-5" checked>
+                        <label class="btn btn-outline-primary" for="day-5">Sex</label>
+                        
+                        <input type="checkbox" class="btn-check" id="day-6" checked>
+                        <label class="btn btn-outline-primary" for="day-6">Sáb</label>
+                        
+                        <input type="checkbox" class="btn-check" id="day-7" checked>
+                        <label class="btn btn-outline-primary" for="day-7">Dom</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ações -->
+            <div class="d-flex gap-3">
+                <button type="button" class="btn btn-primary btn-lg" onclick="saveMetricConfig()">
+                    <i class="fas fa-save"></i> Salvar Configuração
+                </button>
+                <button type="button" class="btn btn-success btn-lg" onclick="saveAndActivate()">
+                    <i class="fas fa-play"></i> Salvar e Ativar Monitoramento
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-lg" onclick="previewJSON()">
+                    <i class="fas fa-code"></i> Visualizar JSON
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function updateDataSourceFields() {
+            const type = document.getElementById('data-source-type').value;
+            
+            // Esconder todos
+            document.getElementById('sql-fields').style.display = 'none';
+            document.getElementById('csv-fields').style.display = 'none';
+            document.getElementById('api-fields').style.display = 'none';
+            
+            // Mostrar o selecionado
+            if (type === 'sql_server') {
+                document.getElementById('sql-fields').style.display = 'block';
+            } else if (type === 'csv' || type === 'excel') {
+                document.getElementById('csv-fields').style.display = 'block';
+            } else if (type === 'api') {
+                document.getElementById('api-fields').style.display = 'block';
+            }
+        }
+        
+        function saveMetricConfig() {
+            const config = buildConfigObject();
+            console.log('Configuração:', config);
+            
+            // Enviar para API
+            fetch('/anomaly/metrics/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': localStorage.getItem('cortex_api_key')
+                },
+                body: JSON.stringify(config)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Configuração salva com sucesso!');
+                window.location.href = '/admin/dashboard#anomalies';
+            })
+            .catch(error => {
+                alert('Erro ao salvar: ' + error.message);
+            });
+        }
+        
+        function saveAndActivate() {
+            document.getElementById('metric-enabled').checked = true;
+            saveMetricConfig();
+        }
+        
+        function previewJSON() {
+            const config = buildConfigObject();
+            const jsonStr = JSON.stringify(config, null, 2);
+            
+            const modal = document.createElement('div');
+            modal.innerHTML = `
+                <div class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">JSON da Configuração</h5>
+                                <button type="button" class="btn-close" onclick="this.closest('.modal').remove()"></button>
+                            </div>
+                            <div class="modal-body">
+                                <pre class="code-editor">${jsonStr}</pre>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Fechar</button>
+                                <button class="btn btn-primary" onclick="navigator.clipboard.writeText('${jsonStr.replace(/'/g, "\\'")}'); alert('Copiado!')">
+                                    <i class="fas fa-copy"></i> Copiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        function buildConfigObject() {
+            const type = document.getElementById('data-source-type').value;
+            
+            const config = {
+                id: document.getElementById('metric-id').value,
+                name: document.getElementById('metric-name').value,
+                description: document.getElementById('metric-description').value,
+                enabled: document.getElementById('metric-enabled').checked,
+                data_source: {
+                    type: type
+                },
+                anomaly_detection: {
+                    method: document.getElementById('detection-method').value,
+                    contamination: parseFloat(document.getElementById('detection-contamination').value),
+                    threshold: parseFloat(document.getElementById('detection-threshold').value)
+                },
+                alert_config: {
+                    severity: document.getElementById('alert-severity').value,
+                    threshold_type: document.getElementById('alert-threshold-type').value,
+                    threshold_value: parseFloat(document.getElementById('alert-threshold-value').value),
+                    cooldown_minutes: parseInt(document.getElementById('alert-cooldown').value),
+                    channels: [],
+                    recipients: document.getElementById('alert-recipients').value.split(',').map(s => s.trim())
+                },
+                monitoring: {
+                    check_interval: parseInt(document.getElementById('monitoring-interval').value),
+                    active_hours: document.getElementById('monitoring-hours').value,
+                    active_days: []
+                }
+            };
+            
+            // Adicionar campos específicos da fonte de dados
+            if (type === 'sql_server') {
+                config.data_source.connection_id = document.getElementById('sql-connection').value;
+                config.data_source.query = document.getElementById('sql-query').value;
+                config.data_source.value_column = document.getElementById('sql-value-column').value;
+                config.historical_data = {
+                    query: document.getElementById('sql-historical-query').value,
+                    min_samples: parseInt(document.getElementById('min-samples').value)
+                };
+            } else if (type === 'csv') {
+                config.data_source.file_path = document.getElementById('csv-file-path').value;
+                config.data_source.value_column = document.getElementById('csv-value-column').value;
+                config.data_source.timestamp_column = document.getElementById('csv-timestamp-column').value;
+                config.data_source.delimiter = document.getElementById('csv-delimiter').value;
+                config.data_source.encoding = document.getElementById('csv-encoding').value;
+            } else if (type === 'api') {
+                config.data_source.url = document.getElementById('api-url').value;
+                config.data_source.method = document.getElementById('api-method').value;
+                config.data_source.timeout = parseInt(document.getElementById('api-timeout').value);
+                config.data_source.headers = JSON.parse(document.getElementById('api-headers').value);
+                config.data_source.response_path = document.getElementById('api-response-path').value;
+            }
+            
+            // Canais de alerta
+            if (document.getElementById('alert-email').checked) config.alert_config.channels.push('email');
+            if (document.getElementById('alert-teams').checked) config.alert_config.channels.push('teams');
+            if (document.getElementById('alert-webhook').checked) config.alert_config.channels.push('webhook');
+            
+            // Dias ativos
+            for (let i = 1; i <= 7; i++) {
+                if (document.getElementById(`day-${i}`).checked) {
+                    config.monitoring.active_days.push(i);
+                }
+            }
+            
+            return config;
+        }
+        
+        function testSQLQuery() {
+            alert('Testando query SQL...');
+        }
+        
+        function testAPI() {
+            alert('Testando API...');
+        }
+    </script>
+</body>
+</html>
+
