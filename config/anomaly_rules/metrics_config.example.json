@@ -1,0 +1,53 @@
+{
+  "version": "2.0",
+  "description": "Exemplo de configuração de métricas para detecção de anomalias",
+  
+  "metrics": [
+    {
+      "id": "vendas_totais_diarias",
+      "name": "Vendas Totais Diárias",
+      "description": "Soma de todas as vendas do dia",
+      "enabled": true,
+      
+      "data_source": {
+        "type": "sql_server",
+        "connection_id": "sql_principal",
+        "query": "SELECT SUM(valor_venda) as valor FROM vendas WHERE CAST(data_venda AS DATE) = CAST(GETDATE() AS DATE)",
+        "value_column": "valor"
+      },
+      
+      "historical_data": {
+        "query": "SELECT CAST(data_venda AS DATE) as data, SUM(valor_venda) as valor FROM vendas WHERE data_venda >= DATEADD(day, -30, GETDATE()) GROUP BY CAST(data_venda AS DATE) ORDER BY data",
+        "min_samples": 30
+      },
+      
+      "anomaly_detection": {
+        "method": "isolation_forest",
+        "contamination": 0.1,
+        "threshold": -0.5
+      },
+      
+      "alert_config": {
+        "severity": "high",
+        "threshold_type": "percentage",
+        "threshold_value": 15,
+        "cooldown_minutes": 60,
+        "channels": ["email", "teams"],
+        "recipients": ["gerente@empresa.com"]
+      },
+      
+      "monitoring": {
+        "check_interval": 3600,
+        "active_hours": "00:00-23:59",
+        "active_days": [1, 2, 3, 4, 5, 6, 7]
+      }
+    }
+  ],
+  
+  "global_settings": {
+    "timezone": "America/Sao_Paulo",
+    "min_historical_days": 30,
+    "confidence_threshold": 0.8
+  }
+}
+

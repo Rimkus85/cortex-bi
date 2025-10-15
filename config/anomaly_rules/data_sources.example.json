@@ -1,0 +1,38 @@
+{
+  "version": "2.0",
+  "description": "Exemplo de configurações de conexão para fontes de dados",
+  
+  "connections": {
+    "sql_principal": {
+      "type": "sql_server",
+      "host": "servidor.database.windows.net",
+      "port": 1433,
+      "database": "vendas_db",
+      "username": "${SQL_SERVER_USERNAME}",
+      "password": "${SQL_SERVER_PASSWORD}",
+      "driver": "ODBC Driver 17 for SQL Server",
+      "connection_timeout": 30,
+      "query_timeout": 60
+    },
+    
+    "api_analytics": {
+      "type": "api",
+      "base_url": "https://api.analytics.empresa.com",
+      "auth_type": "bearer",
+      "token": "${API_ANALYTICS_TOKEN}",
+      "timeout": 30
+    }
+  },
+  
+  "power_bi": {
+    "tenant_id": "${POWERBI_TENANT_ID}",
+    "client_id": "${POWERBI_CLIENT_ID}",
+    "client_secret": "${POWERBI_CLIENT_SECRET}"
+  },
+  
+  "file_paths": {
+    "data_root": "data/raw",
+    "backup_root": "data/backup"
+  }
+}
+
